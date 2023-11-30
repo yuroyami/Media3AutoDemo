@@ -7,19 +7,23 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -54,12 +58,12 @@ class DemoActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     val itemsRem = remember { items }
 
-                    LazyColumn {
+                    LazyColumn(Modifier.fillMaxWidth()) {
                         items(itemsRem) { item ->
 
                             ListItem(
-                                headlineContent = { item.mediaMetadata.title },
-                                supportingContent = { item.mediaId },
+                                headlineContent = { Text(item.mediaMetadata.title.toString() ) },
+                                supportingContent = { Text(item.mediaId, fontSize = 9.sp) },
                                 trailingContent = {
                                     Column {
                                         IconButton(onClick = {
@@ -82,6 +86,8 @@ class DemoActivity : ComponentActivity() {
                                     }
                                 }
                             )
+
+                            HorizontalDivider()
                         }
                     }
                 }

@@ -64,7 +64,9 @@ class DemoService : MediaLibraryService() {
         )
         .build()
 
-    var actualTracks = mutableListOf<MediaItem>()
+    var actualTracks = mutableListOf<MediaItem>().also {
+        it.addAll(DemoPlaylist.demoitems)
+    }
 
     override fun onCreate() {
         super.onCreate()
