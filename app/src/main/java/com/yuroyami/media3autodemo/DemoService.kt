@@ -30,9 +30,6 @@ class DemoService : MediaLibraryService() {
     lateinit var player: Player
     private var mediaSession: MediaLibrarySession? = null
 
-    private val serviceIOScope = CoroutineScope(Dispatchers.IO)
-    private val serviceMainScope = CoroutineScope(Dispatchers.Main)
-
     /** The hierarchy in this demo is simple. There is a root invisible item that has one child item
      * which is the playlist node item. The playlist node item contains the visible media items in the app.
      *
@@ -71,7 +68,6 @@ class DemoService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
 
-        /** Building ExoPlayer to use FFmpeg Audio Renderer and also enable fast-seeking */
         player = ExoPlayer.Builder(applicationContext)
             .setHandleAudioBecomingNoisy(true) /* Prevent annoying noise when changing devices */
             .setAudioAttributes(
@@ -85,7 +81,7 @@ class DemoService : MediaLibraryService() {
 
         player.repeatMode = Player.REPEAT_MODE_ALL
 
-        /** Creating our MediaLibrarySession */
+        /* Creating our MediaLibrarySession */
         mediaSession = with(MediaLibrarySession.Builder(
             this, player, object : MediaLibrarySession.Callback {
                 override fun onAddMediaItems(mediaSession: MediaSession, controller: MediaSession.ControllerInfo, mediaItems: MutableList<MediaItem>): ListenableFuture<MutableList<MediaItem>> {
@@ -138,7 +134,6 @@ class DemoService : MediaLibraryService() {
                         .buildUpon()
                         .add(CUSTOM_COM_PLAY_ITEM) //Command executed when an item is requested to play
                         .add(CUSTOM_COM_PLAYLIST_REMOVE) //Command used when removing items from playlist
-                        .add(CUSTOM_COM_PLAYLIST_CLEAR) //Command used when clearing all items from playlist
                         .build()
 
                     return MediaSession.ConnectionResult.accept(sessionComs, superCall.availablePlayerCommands)
@@ -152,7 +147,7 @@ class DemoService : MediaLibraryService() {
                     args: Bundle
                 ): ListenableFuture<SessionResult> {
 
-                    /** When the controller tries to add an item to the playlist */
+                    /* When the controller tries to add an item to the playlist */
                     if (customCommand == CUSTOM_COM_PLAY_ITEM) {
 
                         args.getString("id")?.let { mediaid ->
@@ -165,27 +160,19 @@ class DemoService : MediaLibraryService() {
                         }
                     }
 
-                    /** When the controller tries to remove an item from the playlist */
+                    /* When the controller tries to remove an item from the playlist */
                     if (customCommand == CUSTOM_COM_PLAYLIST_REMOVE) {
                         (args.getString("id", player.currentMediaItem?.mediaId ?: ""))?.let { mediaid ->
                             actualTracks.firstOrNull { it.mediaId == mediaid }?.let { itemToRemove ->
                                 actualTracks.remove(itemToRemove)
 
-                                serviceIOScope.launch {
-                                    /** notifying UI-end that the playlist has been modified */
-                                    mediaSession?.notifyChildrenChanged(nodePLAYLIST, actualTracks.size, null)
-                                }
+                                /** This line should notify Android Auto headunit to refresh the playlist,
+                                 * but if you test it, it actually won't. However, the activity will be notified. */
+                                mediaSession?.notifyChildrenChanged(nodePLAYLIST, actualTracks.size, null)
 
                                 return Futures.immediateFuture(SessionResult(RESULT_SUCCESS))
                             }
                         }
-                    }
-
-                    /** When the controller tries to clear the playlist */
-                    if (customCommand == CUSTOM_COM_PLAYLIST_CLEAR) {
-                        actualTracks.clear()
-                        mediaSession?.notifyChildrenChanged(nodePLAYLIST, 0, null)
-                        return Futures.immediateFuture(SessionResult(RESULT_SUCCESS))
                     }
 
                     return super.onCustomCommand(session, controller, customCommand, args)
@@ -205,23 +192,6 @@ class DemoService : MediaLibraryService() {
             }
             build()
         }
-
-        /** Listening to some player events */
-        player.addListener(object : Player.Listener {
-            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                super.onMediaItemTransition(mediaItem, reason)
-//
-//                Log.e(TAG, mediaItem?.mediaId ?: "Empty Media Id")
-//
-//                val index = actualTracks.indexOfFirst { it.mediaId == mediaItem?.mediaId }
-//                player.setMediaItems(actualTracks, index, 0)
-//                player.prepare()
-            }
-
-            override fun onPlayerError(error: PlaybackException) {
-                Log.e(TAG, error.stackTraceToString())
-            }
-        })
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = mediaSession
